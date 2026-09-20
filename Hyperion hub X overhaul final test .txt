@@ -132,7 +132,253 @@ local Window = Fluent:CreateWindow({
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl,
 })
+-- === HYPERION X LOGO ===
+local imageUrl = "https://i.ibb.co/ZzjhCDRm/Screenshot-20260917-164338-Roblox.jpg"
+local fileName = "HyperionHubX_Logo.jpg"
+local customAssetUrl
+local FALLBACK_ICON = "rbxassetid://139104323768501"
 
+local assetLoader = getcustomasset or getsynasset
+if assetLoader and writefile and isfile and not isfile(fileName) then
+    pcall(function()
+        local imageData = game:HttpGet(imageUrl)
+        if imageData and #imageData > 0 then
+            writefile(fileName, imageData)
+        end
+    end)
+end
+
+if assetLoader and isfile and isfile(fileName) then
+    pcall(function()
+        customAssetUrl = assetLoader(fileName)
+    end)
+end
+
+local function playLogoSound(soundId)
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://" .. soundId
+    sound.Parent = game:GetService("SoundService")
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
+
+local openshit = Instance.new("ScreenGui")
+openshit.Name = "openshit"
+openshit.Parent = player.PlayerGui
+openshit.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+openshit.ResetOnSpawn = false
+
+local mainopen = Instance.new("TextButton")
+mainopen.Name = "mainopen"
+mainopen.Parent = openshit
+mainopen.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainopen.BackgroundTransparency = 1
+mainopen.Position = UDim2.new(0.101969875, 0, 0.110441767, 0)
+mainopen.Size = UDim2.new(0, 58, 0, 58)
+mainopen.Text = ""
+mainopen.Visible = true
+mainopen.ZIndex = 1
+
+local mainopens = Instance.new("UICorner")
+mainopens.Parent = mainopen
+
+local SizeBackMulti = 0.1
+local AssetsBackground = "rbxassetid://135015813011627"
+
+local backgroundImage = Instance.new("ImageLabel")
+backgroundImage.Name = "RotatingBackground"
+backgroundImage.Parent = mainopen
+backgroundImage.Size = UDim2.new(1.8 + SizeBackMulti, 0, 1.8 + SizeBackMulti, 0)
+backgroundImage.Position = UDim2.new(0.5, 0, 0.5, 0)
+backgroundImage.AnchorPoint = Vector2.new(0.5, 0.5)
+backgroundImage.BackgroundTransparency = 1
+backgroundImage.Image = AssetsBackground
+backgroundImage.SizeConstraint = Enum.SizeConstraint.RelativeXX
+backgroundImage.ZIndex = 0
+backgroundImage.Active = false
+
+local frontImage = Instance.new("ImageLabel")
+frontImage.Name = "StaticIcon"
+frontImage.Parent = mainopen
+frontImage.Size = UDim2.new(1, 0, 1, 0)
+frontImage.Position = UDim2.new(0.5, 0, 0.5, 0)
+frontImage.AnchorPoint = Vector2.new(0.5, 0.5)
+frontImage.BackgroundTransparency = 1
+frontImage.Image = customAssetUrl or FALLBACK_ICON
+frontImage.ScaleType = Enum.ScaleType.Fit
+frontImage.ZIndex = 2
+frontImage.Visible = true
+frontImage.Active = false
+
+local frontCorner = Instance.new("UICorner")
+frontCorner.CornerRadius = UDim.new(0, 0)
+frontCorner.Parent = frontImage
+
+local rotation = 0
+local speed = 90
+local lastTime = tick()
+
+task.spawn(function()
+    while true do
+        local now = tick()
+        local delta = now - lastTime
+        lastTime = now
+        rotation = (rotation + speed * delta) % 360
+        backgroundImage.Rotation = rotation
+        task.wait()
+    end
+end)
+
+local function MakeDraggable(handle, object, startLocked)
+    object:SetAttribute("Locked", startLocked or false)
+    local dragging, dragInput, dragStart, startPos
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        if object:GetAttribute("Locked") then return end
+        dragging = true
+        dragStart = input.Position
+        startPos = object.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end)
+
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging and not object:GetAttribute("Locked") then
+            local delta = input.Position - dragStart
+            object.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+MakeDraggable(mainopen, mainopen, false)
+
+local visibilityButton = Instance.new("TextButton")
+visibilityButton.Name = "LogoVisibilityButton"
+visibilityButton.Parent = mainopen
+visibilityButton.Size = UDim2.new(0, 28, 0, 28)
+visibilityButton.Position = UDim2.new(1, 4, 0.5, -14)
+visibilityButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+visibilityButton.BackgroundTransparency = 0.1
+visibilityButton.Text = "👁"
+visibilityButton.TextSize = 16
+visibilityButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+visibilityButton.Visible = false
+visibilityButton.ZIndex = 20
+visibilityButton.Active = true
+
+local visibilityCorner = Instance.new("UICorner")
+visibilityCorner.CornerRadius = UDim.new(0, 6)
+visibilityCorner.Parent = visibilityButton
+
+local logoVisible = true
+local function SetLogoVisible(visible)
+    logoVisible = visible
+    backgroundImage.Visible = visible
+    frontImage.Visible = visible
+end
+
+local buttonPressed = false
+visibilityButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        buttonPressed = true
+    end
+end)
+visibilityButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        task.wait()
+        buttonPressed = false
+    end
+end)
+visibilityButton.MouseButton1Click:Connect(function()
+    SetLogoVisible(not logoVisible)
+end)
+
+local LOCK_HOLD, VIS_HOLD, CLICK_MAX = 3.0, 4.0, 0.4
+local pressStart = 0
+local lockToken, visToken = 0, 0
+local lockFired, visFired = false, false
+
+local logoClickSounds = {
+    "7127123605", "137566474343039", "438666542", "257001341",
+    "257000833", "7127123554", "131607746976396",
+    "97325669841459", "109312518223078"
+}
+
+mainopen.InputBegan:Connect(function(input)
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1
+    and input.UserInputType ~= Enum.UserInputType.Touch then return end
+    if buttonPressed then return end
+
+    pressStart = tick()
+    lockFired, visFired = false, false
+    lockToken += 1
+    visToken  += 1
+    local myLock, myVis = lockToken, visToken
+
+    task.delay(LOCK_HOLD, function()
+        if myLock ~= lockToken then return end
+        lockFired = true
+        local newState = not mainopen:GetAttribute("Locked")
+        mainopen:SetAttribute("Locked", newState)
+        Fluent:Notify({
+            Title = newState and "Logo Locked" or "Logo Unlocked",
+            Content = newState and "The logo is locked in place." or "The logo can now be moved.",
+            Duration = 2
+        })
+    end)
+
+    task.delay(VIS_HOLD, function()
+        if myVis ~= visToken then return end
+        visFired = true
+        visibilityButton.Visible = not visibilityButton.Visible
+    end)
+
+    input.Changed:Connect(function()
+        if input.UserInputState == Enum.UserInputState.End then
+            lockToken += 1
+            visToken  += 1
+            local heldFor = tick() - pressStart
+            if not lockFired and not visFired and heldFor < CLICK_MAX then
+                playLogoSound(logoClickSounds[math.random(#logoClickSounds)])
+                Window:Minimize()
+
+                local function smoothSpeed(target, duration)
+                    local start = speed
+                    local steps = 30
+                    for i = 1, steps do
+                        speed = start + (target - start) * (i / steps)
+                        task.wait(duration / steps)
+                    end
+                    speed = target
+                end
+                task.spawn(function()
+                    smoothSpeed(360, 0.4); task.wait(0.5)
+                    smoothSpeed(180, 0.4); task.wait(0.3)
+                    smoothSpeed(90,  0.4)
+                end)
+            end
+        end
+    end)
+end)
 
 
 local FarmTab = Window:AddTab({ Title = "Farm", Icon = "leaf" })
